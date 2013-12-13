@@ -1,3 +1,6 @@
+vast-2.0.3
+ * Fix assertion failure in filterColdSSTables (CASSANDRA-6483)
+
 2.0.3
  * Fix FD leak on slice read path (CASSANDRA-6275)
  * Cancel read meter task when closing SSTR (CASSANDRA-6358)
