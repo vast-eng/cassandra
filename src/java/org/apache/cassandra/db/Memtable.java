@@ -367,11 +367,12 @@ public class Memtable
             SSTableWriter writer = createFlushWriter(cfs.getTempSSTablePath(sstableDirectory));
             try
             {
+                int heavilyContendedRowCount = 0;
                 // (we can't clear out the map as-we-go to free up memory,
                 //  since the memtable is being used for queries in the "pending flush" category)
                 for (Map.Entry<RowPosition, AtomicSortedColumns> entry : rows.entrySet())
                 {
-                    ColumnFamily cf = entry.getValue();
+                    AtomicSortedColumns cf = entry.getValue();
                     if (cf.isMarkedForDelete())
                     {
                         // When every node is up, there's no reason to write batchlog data out to sstables
@@ -393,6 +394,9 @@ public class Memtable
                             currentSize.addAndGet(-ColumnFamilyStore.removeDeletedColumnsOnly(cf, Integer.MIN_VALUE));
                     }
 
+                    if (cf.usePessimisticLocking())
+                        heavilyContendedRowCount++;
+
                     if (cf.getColumnCount() > 0 || cf.isMarkedForDelete())
                         writer.append((DecoratedKey)entry.getKey(), cf);
                 }
@@ -410,6 +414,8 @@ public class Memtable
                     logger.info("Completed flushing; nothing needed to be retained.  Commitlog position was {}",
                                 context.get());
                 }
+                if (heavilyContendedRowCount > 0)
+                    logger.warn(String.format("High update contention in %d/%d partitions of %s ", heavilyContendedRowCount, rows.size(), Memtable.this.toString()));
                 return ssTable;
             }
             catch (Throwable e)
