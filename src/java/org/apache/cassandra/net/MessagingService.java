@@ -763,6 +763,9 @@ public final class MessagingService implements MessagingServiceMBean
         if (version < VERSION_20)
             allNodesAtLeast20 = false;
         Integer v = versions.put(endpoint, version);
+        if (v == null || v != version) {
+            logger.info("Updating version {} -> {} for {}", v, version, endpoint);
+        }
 
         // if the version was increased to 2.0 or later, see if all nodes are >= 2.0 now
         if (v != null && v < VERSION_20 && version >= VERSION_20)
@@ -775,6 +778,8 @@ public final class MessagingService implements MessagingServiceMBean
     {
         logger.debug("Reseting version for {}", endpoint);
         Integer removed = versions.remove(endpoint);
+        if (removed != null)
+            logger.info("Reseting version {} -> null for {}", removed, endpoint);
         if (removed != null && removed <= VERSION_20)
             refreshAllNodesAtLeast20();
     }
@@ -816,6 +821,11 @@ public final class MessagingService implements MessagingServiceMBean
         if (v == null)
             throw new IllegalStateException("getRawVersion() was called without checking knowsVersion() result first");
         return v;
+    }
+
+    public int getRawVersionNoCheck(InetAddress endpoint)
+    {
+        return versions.get(endpoint);
     }
 
     public boolean knowsVersion(InetAddress endpoint)

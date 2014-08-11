@@ -114,7 +114,7 @@ public class MigrationManager
                     EndpointState epState = Gossiper.instance.getEndpointStateForEndpoint(endpoint);
                     if (epState == null)
                     {
-                        logger.debug("epState vanished for {}, not submitting migration task", endpoint);
+                        logger.info("epState vanished for {}, not submitting migration task", endpoint);
                         return;
                     }
                     VersionedValue value = epState.getApplicationState(ApplicationState.SCHEMA);
@@ -147,9 +147,26 @@ public class MigrationManager
          * Don't request schema from nodes with a differnt or unknonw major version (may have incompatible schema)
          * Don't request schema from fat clients
          */
-        return MessagingService.instance().knowsVersion(endpoint)
+        boolean pull = MessagingService.instance().knowsVersion(endpoint)
                 && MessagingService.instance().getRawVersion(endpoint) == MessagingService.current_version
                 && !Gossiper.instance.isFatClient(endpoint);
+        if (!pull)
+        {
+            try
+            {
+                logger.info("shouldPullFromSchema returning false for " + endpoint +
+                        " knowsVersion=" + MessagingService.instance().knowsVersion(endpoint) +
+                        " rawVersion=" + MessagingService.instance().getRawVersionNoCheck(endpoint) +
+                        " version=" + MessagingService.instance().getVersion(endpoint) +
+                        " currentVersion=" + MessagingService.current_version +
+                        " fat=" + Gossiper.instance.isFatClient(endpoint) +
+                        " member=" + StorageService.instance.getTokenMetadata().isMember(endpoint));
+            } catch (Exception e)
+            {
+                logger.info("shouldPullFromSchema returning false for " + endpoint + " failed to log details");
+            }
+        }
+        return pull;
     }
 
     public static boolean isReadyForBootstrap()
@@ -306,10 +323,16 @@ public class MigrationManager
 
         for (InetAddress endpoint : Gossiper.instance.getLiveMembers())
         {
-            // only push schema to nodes with known and equal versions
+//            // only push schema to nodes with known and equal versions
+//            if (!endpoint.equals(FBUtilities.getBroadcastAddress()) &&
+//                    MessagingService.instance().knowsVersion(endpoint) &&
+//                    MessagingService.instance().getRawVersion(endpoint) == MessagingService.current_version)
+//                pushSchemaMutation(endpoint, schema);
+            // graham workaround fact that endpoint seems to be null sometimes (this code is similar to 2.0.5 in
+            // that it calls getVersion(endpoint) which returns MessagingService.current_version if the version
+            // isn't known (i.e. null)
             if (!endpoint.equals(FBUtilities.getBroadcastAddress()) &&
-                    MessagingService.instance().knowsVersion(endpoint) &&
-                    MessagingService.instance().getRawVersion(endpoint) == MessagingService.current_version)
+                    MessagingService.instance().getVersion(endpoint) == MessagingService.current_version)
                 pushSchemaMutation(endpoint, schema);
         }
 
