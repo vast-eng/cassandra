@@ -467,7 +467,9 @@ public class Memtable
                 }
                 if (newRatio > MAX_SANE_LIVE_RATIO)
                 {
-                    logger.warn("setting live ratio to maximum of {} instead of {}", MAX_SANE_LIVE_RATIO, newRatio);
+                    // graham changed to info - it is actually changed to debug in 2.0.10, however leaving at info because
+                    // whilst warning's cause alert emails, this still needs investigating
+                    logger.info("setting live ratio to maximum of {} instead of {}", MAX_SANE_LIVE_RATIO, newRatio);
                     newRatio = MAX_SANE_LIVE_RATIO;
                 }
 
