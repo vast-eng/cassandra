@@ -313,7 +313,7 @@ public abstract class Message
             catch (Exception ex)
             {
                 // Don't let the exception propagate to exceptionCaught() if we can help it so that we can assign the right streamID.
-                ctx.getChannel().write(ErrorMessage.fromException(ex).setStreamId(request.getStreamId()));
+                ctx.getChannel().write(ErrorMessage.fromException(ex, ctx.getChannel()).setStreamId(request.getStreamId()));
             }
         }
 
@@ -323,7 +323,7 @@ public abstract class Message
         {
             if (ctx.getChannel().isOpen())
             {
-                ChannelFuture future = ctx.getChannel().write(ErrorMessage.fromException(e.getCause()));
+                ChannelFuture future = ctx.getChannel().write(ErrorMessage.fromException(e.getCause(), ctx.getChannel()));
                 // On protocol exception, close the channel as soon as the message have been sent
                 if (e.getCause() instanceof ProtocolException)
                 {

@@ -208,6 +208,10 @@ public class ErrorMessage extends Message.Response
 
     public static ErrorMessage fromException(Throwable e)
     {
+        return fromException(e, null);
+    }
+
+    public static ErrorMessage fromException(Throwable e, Object contextStringProvider) {
         int streamId = 0;
         if (e instanceof WrappedException)
         {
@@ -219,7 +223,21 @@ public class ErrorMessage extends Message.Response
             return new ErrorMessage((TransportException)e, streamId);
 
         // Unexpected exception
-        logger.error("Unexpected exception during request", e);
+        String contextString = null;
+        if (contextStringProvider != null)
+        {
+            // We don't want to make things worse if toString() throws an exception
+            try
+            {
+                contextString = contextStringProvider.toString();
+            } catch (Exception ignore) {
+            }
+        }
+        
+        if (contextString != null)
+            logger.error("Unexpected exception during request. context = " + contextString, e);
+        else
+            logger.error("Unexpected exception during request", e);
         return new ErrorMessage(new ServerError(e), streamId);
     }
 
