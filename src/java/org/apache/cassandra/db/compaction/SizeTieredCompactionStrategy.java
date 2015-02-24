@@ -334,7 +334,7 @@ public class SizeTieredCompactionStrategy extends AbstractCompactionStrategy
     public Collection<AbstractCompactionTask> getMaximalTask(final int gcBefore)
     {
         Iterable<SSTableReader> filteredSSTables = filterSuspectSSTables(sstables);
-        if (Iterables.isEmpty(sstables))
+        if (Iterables.isEmpty(filteredSSTables))
             return null;
         if (!cfs.getDataTracker().markCompacting(filteredSSTables))
             return null;

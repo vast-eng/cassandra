@@ -1,3 +1,5 @@
+ * Check if the filtered sstables is non-empty in STCS (CASSANDRA-8843)
+ * Apply suggested patch from CASSANDRA-8559 to limit memory used for not very helpful logging which could be immense
  * Fix commitlog getPendingTasks (and getCompletedTasks) to not increment (CASSANDRA-8856)
  * Simpler fix for (CASSANDRA-8860)
  
