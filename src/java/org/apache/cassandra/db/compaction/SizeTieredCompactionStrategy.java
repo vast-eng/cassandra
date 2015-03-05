@@ -82,7 +82,7 @@ public class SizeTieredCompactionStrategy extends AbstractCompactionStrategy
         int maxThreshold = cfs.getMaximumCompactionThreshold();
 
         Iterable<SSTableReader> candidates = filterSuspectSSTables(Sets.intersection(cfs.getUncompactingSSTables(), sstables));
-        candidates = filterColdSSTables(Lists.newArrayList(candidates), options.coldReadsToOmit, cfs.getMinimumCompactionThreshold());
+        candidates = filterColdSSTables(cfs, Lists.newArrayList(candidates), options.coldReadsToOmit, cfs.getMinimumCompactionThreshold());
 
         List<List<SSTableReader>> buckets = getBuckets(createSSTableAndLengthPairs(candidates), options.bucketHigh, options.bucketLow, options.minSSTableSize);
         logger.debug("Compaction buckets are {}", buckets);
@@ -109,18 +109,18 @@ public class SizeTieredCompactionStrategy extends AbstractCompactionStrategy
     /**
      * Removes as many cold sstables as possible while retaining at least 1-coldReadsToOmit of the total reads/sec
      * across all sstables
+     * @param cfs
      * @param sstables all sstables to consider
      * @param coldReadsToOmit the proportion of total reads/sec that will be omitted (0=omit nothing, 1=omit everything)
      * @param minThreshold min compaction threshold
      * @return a list of sstables with the coldest sstables excluded until the reads they represent reaches coldReadsToOmit
      */
     @VisibleForTesting
-    static List<SSTableReader> filterColdSSTables(List<SSTableReader> sstables, double coldReadsToOmit, int minThreshold)
+    static List<SSTableReader> filterColdSSTables(ColumnFamilyStore cfs, List<SSTableReader> sstables, double coldReadsToOmit, int minThreshold)
     {
         if (coldReadsToOmit == 0.0)
         {
-            if (!sstables.isEmpty())
-                logger.debug("Skipping cold sstable filter for list sized {} containing {}", sstables.size(), sstables.get(0).getFilename());
+            logger.debug("Skipping cold sstable filter of {} elements in {}", sstables.size(), cfs.getColumnFamilyName());
             return sstables;
         }
 
