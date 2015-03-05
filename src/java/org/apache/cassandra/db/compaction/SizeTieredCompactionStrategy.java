@@ -118,7 +118,11 @@ public class SizeTieredCompactionStrategy extends AbstractCompactionStrategy
     static List<SSTableReader> filterColdSSTables(List<SSTableReader> sstables, double coldReadsToOmit, int minThreshold)
     {
         if (coldReadsToOmit == 0.0)
+        {
+            if (!sstables.isEmpty())
+                logger.debug("Skipping cold sstable filter for list sized {} containing {}", sstables.size(), sstables.get(0).getFilename());
             return sstables;
+        }
 
         // Sort the sstables by hotness (coldest-first). We first build a map because the hotness may change during the sort.
         final Map<SSTableReader, Double> hotnessSnapshot = getHotnessMap(sstables);
