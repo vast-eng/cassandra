@@ -124,6 +124,8 @@ public class SizeTieredCompactionStrategy extends AbstractCompactionStrategy
             return sstables;
         }
 
+        logger.debug("Not skipping cold sstable filter of {} elements in {}", sstables.size(), cfs.getColumnFamilyName());
+
         // Sort the sstables by hotness (coldest-first). We first build a map because the hotness may change during the sort.
         final Map<SSTableReader, Double> hotnessSnapshot = getHotnessMap(sstables);
         Collections.sort(sstables, new Comparator<SSTableReader>()
