@@ -2161,10 +2161,18 @@ public class StorageProxy implements StorageProxyMBean
         public final void run()
         {
 
-            if (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - constructionTime) > DatabaseDescriptor.getTimeout(verb))
+            long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - constructionTime);
+            long timeout = DatabaseDescriptor.getTimeout(verb);
+            if (elapsed > timeout)
             {
-                MessagingService.instance().incrementDroppedMessages(verb);
+                MessagingService.instance().incrementDroppedMessages(verb, false);
+                MessagingService.instance().updateDroppedMessagesHistograms(verb, false, elapsed - timeout);
                 return;
+            } else {
+                if (MessagingService.undroppedHistograms)
+                {
+                    MessagingService.instance().updateUnDroppedMessagesHistograms(verb, true, timeout - elapsed);
+                }
             }
             try
             {
@@ -2188,9 +2196,13 @@ public class StorageProxy implements StorageProxyMBean
 
         public final void run()
         {
-            if (System.currentTimeMillis() > constructionTime + DatabaseDescriptor.getTimeout(MessagingService.Verb.MUTATION))
+            long current = System.currentTimeMillis();
+            long cutoff = constructionTime + DatabaseDescriptor.getTimeout(MessagingService.Verb.MUTATION);
+            if (current > cutoff)
             {
-                MessagingService.instance().incrementDroppedMessages(MessagingService.Verb.MUTATION);
+                MessagingService.instance().incrementDroppedMessages(MessagingService.Verb.LOCAL_MUTATION, false);
+                MessagingService.instance().updateDroppedMessagesHistograms(MessagingService.Verb.LOCAL_MUTATION, false, current - cutoff);
+
                 HintRunnable runnable = new HintRunnable(FBUtilities.getBroadcastAddress())
                 {
                     protected void runMayThrow() throws Exception
@@ -2200,6 +2212,11 @@ public class StorageProxy implements StorageProxyMBean
                 };
                 submitHint(runnable);
                 return;
+            } else {
+                if (MessagingService.undroppedHistograms)
+                {
+                    MessagingService.instance().updateUnDroppedMessagesHistograms(MessagingService.Verb.LOCAL_MUTATION, false, cutoff - current);
+                }
             }
 
             try

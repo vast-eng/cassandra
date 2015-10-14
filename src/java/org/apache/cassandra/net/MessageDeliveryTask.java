@@ -43,11 +43,21 @@ public class MessageDeliveryTask implements Runnable
     public void run()
     {
         MessagingService.Verb verb = message.verb;
-        if (MessagingService.DROPPABLE_VERBS.contains(verb)
-            && System.currentTimeMillis() > constructionTime + message.getTimeout())
+        if (MessagingService.DROPPABLE_VERBS.contains(verb))
         {
-            MessagingService.instance().incrementDroppedMessages(verb);
-            return;
+            long current = System.currentTimeMillis();
+            long cutoff = constructionTime + message.getTimeout();
+            if (current > cutoff)
+            {
+                MessagingService.instance().incrementDroppedMessages(verb, true);
+                MessagingService.instance().updateDroppedMessagesHistograms(verb, true, current - cutoff);
+                return;
+            } else {
+                if (MessagingService.undroppedHistograms)
+                {
+                    MessagingService.instance().updateUnDroppedMessagesHistograms(verb, true, cutoff - current);
+                }
+            }
         }
 
         IVerbHandler verbHandler = MessagingService.instance().getVerbHandler(verb);

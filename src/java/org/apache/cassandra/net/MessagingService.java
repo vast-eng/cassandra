@@ -71,6 +71,7 @@ import org.apache.cassandra.utils.concurrent.SimpleCondition;
 public final class MessagingService implements MessagingServiceMBean
 {
     public static final String MBEAN_NAME = "org.apache.cassandra.net:type=MessagingService";
+    public static final boolean undroppedHistograms = true;
 
     // 8 bits version, so don't waste versions
     public static final int VERSION_12 = 6;
@@ -134,6 +135,7 @@ public final class MessagingService implements MessagingServiceMBean
         UNUSED_1,
         UNUSED_2,
         UNUSED_3,
+        LOCAL_MUTATION, // temporary for distinguishing dropped messages
         ;
     }
 
@@ -289,6 +291,7 @@ public final class MessagingService implements MessagingServiceMBean
                                                                    Verb._TRACE,
                                                                    Verb.MUTATION,
                                                                    Verb.COUNTER_MUTATION,
+                                                                   Verb.LOCAL_MUTATION,
                                                                    Verb.READ_REPAIR,
                                                                    Verb.READ,
                                                                    Verb.RANGE_SLICE,
@@ -299,6 +302,8 @@ public final class MessagingService implements MessagingServiceMBean
     private final Map<Verb, DroppedMessageMetrics> droppedMessages = new EnumMap<Verb, DroppedMessageMetrics>(Verb.class);
     // dropped count when last requested for the Recent api.  high concurrency isn't necessary here.
     private final Map<Verb, Integer> lastDroppedInternal = new EnumMap<Verb, Integer>(Verb.class);
+    // dropped count when last requested for the Recent api.  high concurrency isn't necessary here.
+    private final Map<Verb, Integer> lastDroppedAtDeliveryInternal = new EnumMap<Verb, Integer>(Verb.class);
 
     private final List<ILatencySubscriber> subscribers = new ArrayList<ILatencySubscriber>();
 
@@ -853,10 +858,36 @@ public final class MessagingService implements MessagingServiceMBean
     }
 
 
-    public void incrementDroppedMessages(Verb verb)
+    public void incrementDroppedMessages(Verb verb, boolean atDelivery)
     {
         assert DROPPABLE_VERBS.contains(verb) : "Verb " + verb + " should not legally be dropped";
-        droppedMessages.get(verb).dropped.mark();
+        if (atDelivery)
+        {
+            droppedMessages.get(verb).droppedAtDelivery.mark();
+        } else {
+            droppedMessages.get(verb).dropped.mark();
+        }
+    }
+
+    public void updateDroppedMessagesHistograms(Verb verb, boolean droppedAtDelivery, long overshoot)
+    {
+        assert DROPPABLE_VERBS.contains(verb) : "Verb " + verb + " should not legally be dropped";
+        if (droppedAtDelivery)
+        {
+            droppedMessages.get(verb).droppedAtDeliveryHistogram.update(overshoot);
+        } else {
+            droppedMessages.get(verb).droppedHistogram.update(overshoot);
+        }
+    }
+
+    public void updateUnDroppedMessagesHistograms(Verb verb, boolean atDelivery, long undershoot)
+    {
+        if (atDelivery)
+        {
+            droppedMessages.get(verb).unDroppedAtDeliveryHistogram.update(undershoot);
+        } else {
+            droppedMessages.get(verb).unDroppedHistogram.update(undershoot);
+        }
     }
 
     /**
@@ -887,6 +918,15 @@ public final class MessagingService implements MessagingServiceMBean
                 logger.info("{} {} messages dropped in last {}ms",
                              new Object[] {recent, verb, LOG_DROPPED_INTERVAL_IN_MS});
                 lastDroppedInternal.put(verb, dropped);
+            }
+            dropped = (int) entry.getValue().droppedAtDelivery.count();
+            recent = dropped - lastDroppedAtDeliveryInternal.get(verb);
+            if (recent > 0)
+            {
+                logTpstats = true;
+                logger.info("{} {} messages dropped at delivery in last {}ms",
+                        new Object[] {recent, verb, LOG_DROPPED_INTERVAL_IN_MS});
+                lastDroppedAtDeliveryInternal.put(verb, dropped);
             }
         }
 

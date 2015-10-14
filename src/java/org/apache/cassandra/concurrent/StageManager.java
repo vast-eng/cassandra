@@ -65,7 +65,7 @@ public class StageManager
         {
             public void rejectedExecution(Runnable r, ThreadPoolExecutor executor)
             {
-                MessagingService.instance().incrementDroppedMessages(MessagingService.Verb._TRACE);
+                MessagingService.instance().incrementDroppedMessages(MessagingService.Verb._TRACE, false);
             }
         };
         return new ExecuteOnlyExecutor(1,

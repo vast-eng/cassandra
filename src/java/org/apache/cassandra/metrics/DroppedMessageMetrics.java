@@ -20,6 +20,7 @@ package org.apache.cassandra.metrics;
 import java.util.concurrent.TimeUnit;
 
 import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.Histogram;
 import com.yammer.metrics.core.Meter;
 
 import org.apache.cassandra.net.MessagingService;
@@ -31,6 +32,11 @@ public class DroppedMessageMetrics
 {
     /** Number of dropped messages */
     public final Meter dropped;
+    public final Meter droppedAtDelivery;
+    public final Histogram droppedHistogram;
+    public final Histogram droppedAtDeliveryHistogram;
+    public final Histogram unDroppedHistogram;
+    public final Histogram unDroppedAtDeliveryHistogram;
 
     private long lastDropped = 0;
 
@@ -38,6 +44,11 @@ public class DroppedMessageMetrics
     {
         MetricNameFactory factory = new DefaultNameFactory("DroppedMessage", verb.toString());
         dropped = Metrics.newMeter(factory.createMetricName("Dropped"), "dropped", TimeUnit.SECONDS);
+        droppedAtDelivery = Metrics.newMeter(factory.createMetricName("DroppedAtDelivery"), "droppedAtDelivery", TimeUnit.SECONDS);
+        droppedHistogram = Metrics.newHistogram(factory.createMetricName("DroppedHistogram"), true);
+        droppedAtDeliveryHistogram = Metrics.newHistogram(factory.createMetricName("DroppedAtDeliveryHistogram"), true);
+        unDroppedHistogram = Metrics.newHistogram(factory.createMetricName("UnDroppedHistogram"), true);
+        unDroppedAtDeliveryHistogram = Metrics.newHistogram(factory.createMetricName("UnDroppedAtDeliveryHistogram"), true);
     }
 
     @Deprecated
