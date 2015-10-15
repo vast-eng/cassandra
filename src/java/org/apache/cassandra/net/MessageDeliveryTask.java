@@ -47,6 +47,10 @@ public class MessageDeliveryTask implements Runnable
         {
             long current = System.currentTimeMillis();
             long cutoff = constructionTime + message.getTimeout();
+            if (MessagingService.undroppedHistograms)
+            {
+                MessagingService.instance().updateUnDroppedMessagesDelayHistograms(verb, true, current - constructionTime);
+            }
             if (current > cutoff)
             {
                 MessagingService.instance().incrementDroppedMessages(verb, true);
@@ -56,7 +60,6 @@ public class MessageDeliveryTask implements Runnable
                 if (MessagingService.undroppedHistograms)
                 {
                     MessagingService.instance().updateUnDroppedMessagesHistograms(verb, true, cutoff - current);
-                    MessagingService.instance().updateUnDroppedMessagesDelayHistograms(verb, true, current - constructionTime);
                 }
             }
         }

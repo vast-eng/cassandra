@@ -2163,6 +2163,10 @@ public class StorageProxy implements StorageProxyMBean
 
             long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - constructionTime);
             long timeout = DatabaseDescriptor.getTimeout(verb);
+            if (MessagingService.undroppedHistograms)
+            {
+                MessagingService.instance().updateUnDroppedMessagesDelayHistograms(verb, true, elapsed);
+            }
             if (elapsed > timeout)
             {
                 MessagingService.instance().incrementDroppedMessages(verb, false);
@@ -2171,7 +2175,6 @@ public class StorageProxy implements StorageProxyMBean
             } else {
                 if (MessagingService.undroppedHistograms)
                 {
-                    MessagingService.instance().updateUnDroppedMessagesHistograms(verb, true, timeout - elapsed);
                     MessagingService.instance().updateUnDroppedMessagesDelayHistograms(verb, true, elapsed);
                 }
             }
@@ -2199,6 +2202,11 @@ public class StorageProxy implements StorageProxyMBean
         {
             long current = System.currentTimeMillis();
             long cutoff = constructionTime + DatabaseDescriptor.getTimeout(MessagingService.Verb.MUTATION);
+            if (MessagingService.undroppedHistograms)
+            {
+                MessagingService.instance().updateUnDroppedMessagesDelayHistograms(MessagingService.Verb.LOCAL_MUTATION, false, current - constructionTime);
+            }
+
             if (current > cutoff)
             {
                 MessagingService.instance().incrementDroppedMessages(MessagingService.Verb.LOCAL_MUTATION, false);
@@ -2217,7 +2225,6 @@ public class StorageProxy implements StorageProxyMBean
                 if (MessagingService.undroppedHistograms)
                 {
                     MessagingService.instance().updateUnDroppedMessagesHistograms(MessagingService.Verb.LOCAL_MUTATION, false, cutoff - current);
-                    MessagingService.instance().updateUnDroppedMessagesDelayHistograms(MessagingService.Verb.LOCAL_MUTATION, false, current - constructionTime);
                 }
             }
 
