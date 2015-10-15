@@ -71,7 +71,7 @@ import org.apache.cassandra.utils.concurrent.SimpleCondition;
 public final class MessagingService implements MessagingServiceMBean
 {
     public static final String MBEAN_NAME = "org.apache.cassandra.net:type=MessagingService";
-    public static final boolean undroppedHistograms = true;
+    public static final boolean undroppedHistograms = false;
 
     // 8 bits version, so don't waste versions
     public static final int VERSION_12 = 6;
