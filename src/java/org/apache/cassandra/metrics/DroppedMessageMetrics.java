@@ -37,6 +37,8 @@ public class DroppedMessageMetrics
     public final Histogram droppedAtDeliveryHistogram;
     public final Histogram unDroppedHistogram;
     public final Histogram unDroppedAtDeliveryHistogram;
+    public final Histogram unDroppedDelayHistogram;
+    public final Histogram unDroppedAtDeliveryDelayHistogram;
 
     private long lastDropped = 0;
 
@@ -49,6 +51,8 @@ public class DroppedMessageMetrics
         droppedAtDeliveryHistogram = Metrics.newHistogram(factory.createMetricName("DroppedAtDeliveryHistogram"), true);
         unDroppedHistogram = Metrics.newHistogram(factory.createMetricName("UnDroppedHistogram"), true);
         unDroppedAtDeliveryHistogram = Metrics.newHistogram(factory.createMetricName("UnDroppedAtDeliveryHistogram"), true);
+        unDroppedDelayHistogram = Metrics.newHistogram(factory.createMetricName("UnDroppedDelayHistogram"), true);
+        unDroppedAtDeliveryDelayHistogram = Metrics.newHistogram(factory.createMetricName("UnDroppedAtDeliveryDelayHistogram"), true);
     }
 
     @Deprecated

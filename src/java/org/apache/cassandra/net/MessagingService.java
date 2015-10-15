@@ -891,6 +891,16 @@ public final class MessagingService implements MessagingServiceMBean
         }
     }
 
+    public void updateUnDroppedMessagesDelayHistograms(Verb verb, boolean atDelivery, long undershoot)
+    {
+        if (atDelivery)
+        {
+            droppedMessages.get(verb).unDroppedAtDeliveryDelayHistogram.update(undershoot);
+        } else {
+            droppedMessages.get(verb).unDroppedDelayHistogram.update(undershoot);
+        }
+    }
+
     /**
      * Same as incrementDroppedMessages(), but allows non-droppable verbs. Called for IMessageSink-caused message drops.
      */

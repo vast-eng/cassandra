@@ -2172,6 +2172,7 @@ public class StorageProxy implements StorageProxyMBean
                 if (MessagingService.undroppedHistograms)
                 {
                     MessagingService.instance().updateUnDroppedMessagesHistograms(verb, true, timeout - elapsed);
+                    MessagingService.instance().updateUnDroppedMessagesDelayHistograms(verb, true, elapsed);
                 }
             }
             try
@@ -2216,6 +2217,7 @@ public class StorageProxy implements StorageProxyMBean
                 if (MessagingService.undroppedHistograms)
                 {
                     MessagingService.instance().updateUnDroppedMessagesHistograms(MessagingService.Verb.LOCAL_MUTATION, false, cutoff - current);
+                    MessagingService.instance().updateUnDroppedMessagesDelayHistograms(MessagingService.Verb.LOCAL_MUTATION, false, current - constructionTime);
                 }
             }
 

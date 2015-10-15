@@ -56,6 +56,7 @@ public class MessageDeliveryTask implements Runnable
                 if (MessagingService.undroppedHistograms)
                 {
                     MessagingService.instance().updateUnDroppedMessagesHistograms(verb, true, cutoff - current);
+                    MessagingService.instance().updateUnDroppedMessagesDelayHistograms(verb, true, current - constructionTime);
                 }
             }
         }
