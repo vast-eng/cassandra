@@ -325,6 +325,7 @@ public final class MessagingService implements MessagingServiceMBean
         {
             droppedMessages.put(verb, new DroppedMessageMetrics(verb));
             lastDroppedInternal.put(verb, 0);
+            lastDroppedAtDeliveryInternal.put(verb, 0);
         }
 
         listenGate = new SimpleCondition();
