@@ -17,80 +17,74 @@
  */
 package org.apache.cassandra.net;
 
-import java.util.EnumSet;
-
+import org.apache.cassandra.gms.Gossiper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.cassandra.gms.Gossiper;
+import java.util.EnumSet;
 
-public class MessageDeliveryTask implements Runnable
-{
+public class MessageDeliveryTask implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(MessageDeliveryTask.class);
 
     private final MessageIn message;
     private final long constructionTime;
     private final int id;
 
-    public MessageDeliveryTask(MessageIn message, int id, long timestamp)
-    {
+    public MessageDeliveryTask(MessageIn message, int id, long timestamp) {
         assert message != null;
         this.message = message;
         this.id = id;
         constructionTime = timestamp;
     }
 
-    public void run()
-    {
+    public void run() {
         MessagingService.Verb verb = message.verb;
-        if (MessagingService.DROPPABLE_VERBS.contains(verb))
-        {
+        if (MessagingService.DROPPABLE_VERBS.contains(verb)) {
             long current = System.currentTimeMillis();
             long cutoff = constructionTime + message.getTimeout();
-            if (MessagingService.undroppedHistograms)
-            {
+            if (MessagingService.undroppedHistograms) {
                 MessagingService.instance().updateUnDroppedMessagesDelayHistograms(verb, true, current - constructionTime);
             }
-            if (current > cutoff)
-            {
+            if (current > cutoff) {
                 MessagingService.instance().incrementDroppedMessages(verb, true);
                 MessagingService.instance().updateDroppedMessagesHistograms(verb, true, current - cutoff);
                 return;
             } else {
-                if (MessagingService.undroppedHistograms)
-                {
+                if (MessagingService.undroppedHistograms) {
                     MessagingService.instance().updateUnDroppedMessagesHistograms(verb, true, cutoff - current);
                 }
             }
         }
 
-        IVerbHandler verbHandler = MessagingService.instance().getVerbHandler(verb);
-        if (verbHandler == null)
-        {
-            logger.debug("Unknown verb {}", verb);
-            return;
-        }
-
-        try
-        {
-            verbHandler.doVerb(message, id);
-        }
-        catch (Throwable t)
-        {
-            if (message.doCallbackOnFailure())
-            {
-                MessageOut response = new MessageOut(MessagingService.Verb.INTERNAL_RESPONSE)
-                                                    .withParameter(MessagingService.FAILURE_RESPONSE_PARAM, MessagingService.ONE_BYTE);
-                MessagingService.instance().sendReply(response, id, message.from);
+        long start = System.nanoTime();
+        try {
+            IVerbHandler verbHandler = MessagingService.instance().getVerbHandler(verb);
+            if (verbHandler == null) {
+                logger.debug("Unknown verb {}", verb);
+                return;
             }
 
-            throw t;
+            try {
+                verbHandler.doVerb(message, id);
+            } catch (Throwable t) {
+                if (message.doCallbackOnFailure()) {
+                    MessageOut response = new MessageOut(MessagingService.Verb.INTERNAL_RESPONSE)
+                            .withParameter(MessagingService.FAILURE_RESPONSE_PARAM, MessagingService.ONE_BYTE);
+                    MessagingService.instance().sendReply(response, id, message.from);
+                }
+
+                throw t;
+            }
+            if (GOSSIP_VERBS.contains(message.verb))
+                Gossiper.instance.setLastProcessedMessageAt(constructionTime);
+        } finally {
+            if (MessagingService.DROPPABLE_VERBS.contains(verb)) {
+                MessagingService.instance().updateDroppableDeliveryTaskTime(verb, System.nanoTime() - start);
+            }
         }
-        if (GOSSIP_VERBS.contains(message.verb))
-            Gossiper.instance.setLastProcessedMessageAt(constructionTime);
     }
 
     EnumSet<MessagingService.Verb> GOSSIP_VERBS = EnumSet.of(MessagingService.Verb.GOSSIP_DIGEST_ACK,
-                                                             MessagingService.Verb.GOSSIP_DIGEST_ACK2,
-                                                             MessagingService.Verb.GOSSIP_DIGEST_SYN);
+            MessagingService.Verb.GOSSIP_DIGEST_ACK2,
+            MessagingService.Verb.GOSSIP_DIGEST_SYN);
 }

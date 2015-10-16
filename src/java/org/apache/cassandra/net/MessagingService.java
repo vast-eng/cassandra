@@ -901,6 +901,10 @@ public final class MessagingService implements MessagingServiceMBean
         }
     }
 
+    public void updateDroppableDeliveryTaskTime(Verb verb, long nanos) {
+        droppedMessages.get(verb).messageDeliveryTime.update(nanos, TimeUnit.NANOSECONDS);
+    }
+
     /**
      * Same as incrementDroppedMessages(), but allows non-droppable verbs. Called for IMessageSink-caused message drops.
      */

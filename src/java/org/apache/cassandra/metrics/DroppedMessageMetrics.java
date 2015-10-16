@@ -23,6 +23,7 @@ import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Histogram;
 import com.yammer.metrics.core.Meter;
 
+import com.yammer.metrics.core.Timer;
 import org.apache.cassandra.net.MessagingService;
 
 /**
@@ -39,6 +40,7 @@ public class DroppedMessageMetrics
     public final Histogram unDroppedAtDeliveryHistogram;
     public final Histogram unDroppedDelayHistogram;
     public final Histogram unDroppedAtDeliveryDelayHistogram;
+    public final Timer messageDeliveryTime;
 
     private long lastDropped = 0;
 
@@ -53,6 +55,7 @@ public class DroppedMessageMetrics
         unDroppedAtDeliveryHistogram = Metrics.newHistogram(factory.createMetricName("UnDroppedAtDeliveryHistogram"), true);
         unDroppedDelayHistogram = Metrics.newHistogram(factory.createMetricName("UnDroppedDelayHistogram"), true);
         unDroppedAtDeliveryDelayHistogram = Metrics.newHistogram(factory.createMetricName("UnDroppedAtDeliveryDelayHistogram"), true);
+        messageDeliveryTime = Metrics.newTimer(factory.createMetricName("DeliveryTime"), TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
     }
 
     @Deprecated
