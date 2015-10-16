@@ -136,6 +136,9 @@ public final class MessagingService implements MessagingServiceMBean
         UNUSED_2,
         UNUSED_3,
         LOCAL_MUTATION, // temporary for distinguishing dropped messages
+        DUMMY_MUTATION, // temporary for seeing what happens
+        DUMMY_COUNTER_MUTATION, // temporary for seeing what happens
+        DUMMY_TRACING, // temporary for seeing what happens
         ;
     }
 
@@ -746,6 +749,30 @@ public final class MessagingService implements MessagingServiceMBean
         Runnable runnable = new MessageDeliveryTask(message, id, timestamp);
         TracingAwareExecutorService stage = StageManager.getStage(message.getMessageType());
         assert stage != null : "No stage for message type " + message.verb;
+        // we are seeing delay on the mutation stage which shouldn't be busy, so let's post a dummy runnable
+        // to that, the counter mutation stage which is backed by the same SEP, and the trace which isn't to see if 
+        // they get delayed too
+        if (message.getMessageType() == Stage.MUTATION) {
+            final long time = System.nanoTime();
+            StageManager.getStage(Stage.MUTATION).execute(new Runnable() {
+                @Override
+                public void run() {
+                    MessagingService.instance().updateDroppableDeliveryTaskTime(Verb.DUMMY_MUTATION, System.nanoTime()-time);
+                }
+            }, null);
+            StageManager.getStage(Stage.COUNTER_MUTATION).execute(new Runnable() {
+                @Override
+                public void run() {
+                    MessagingService.instance().updateDroppableDeliveryTaskTime(Verb.DUMMY_COUNTER_MUTATION, System.nanoTime()-time);
+                }
+            }, null);
+            StageManager.getStage(Stage.TRACING).execute(new Runnable() {
+                @Override
+                public void run() {
+                    MessagingService.instance().updateDroppableDeliveryTaskTime(Verb.DUMMY_TRACING, System.nanoTime()-time);
+                }
+            }, null);
+        }
 
         stage.execute(runnable, state);
     }
@@ -902,7 +929,13 @@ public final class MessagingService implements MessagingServiceMBean
     }
 
     public void updateDroppableDeliveryTaskTime(Verb verb, long nanos) {
-        droppedMessages.get(verb).messageDeliveryTime.update(nanos, TimeUnit.NANOSECONDS);
+        DroppedMessageMetrics metrics = droppedMessages.get(verb);
+        if (metrics == null)
+        {
+            metrics = new DroppedMessageMetrics(verb);
+            droppedMessages.put(verb, metrics);
+        }
+        metrics.messageDeliveryTime.update(nanos, TimeUnit.NANOSECONDS);
     }
 
     /**
