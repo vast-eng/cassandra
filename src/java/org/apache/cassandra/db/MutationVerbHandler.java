@@ -20,7 +20,12 @@ package org.apache.cassandra.db;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.concurrent.TimeUnit;
 
+import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.Timer;
+import org.apache.cassandra.metrics.DefaultNameFactory;
+import org.apache.cassandra.metrics.MetricNameFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,9 +36,13 @@ import org.apache.cassandra.tracing.Tracing;
 public class MutationVerbHandler implements IVerbHandler<Mutation>
 {
     private static final Logger logger = LoggerFactory.getLogger(MutationVerbHandler.class);
+    private static MetricNameFactory factory = new DefaultNameFactory("MutationVerbHandler");
+
+    private static Timer mutationTimer = Metrics.newTimer(factory.createMetricName("time"), TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
 
     public void doVerb(MessageIn<Mutation> message, int id)
     {
+        long baseTime = System.nanoTime();
         try
         {
             // Check if there were any forwarding headers in this message
@@ -59,6 +68,10 @@ public class MutationVerbHandler implements IVerbHandler<Mutation>
         catch (IOException e)
         {
             logger.error("Error in mutation", e);
+        }
+        finally
+        {
+            mutationTimer.update(System.nanoTime()-baseTime, TimeUnit.NANOSECONDS);
         }
     }
 
