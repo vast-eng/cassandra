@@ -40,7 +40,9 @@ public class DroppedMessageMetrics
     public final Histogram unDroppedAtDeliveryHistogram;
     public final Histogram unDroppedDelayHistogram;
     public final Histogram unDroppedAtDeliveryDelayHistogram;
+    // todo should be duration
     public final Timer messageDeliveryTime;
+    public final Timer dummyMessageDeliveryDelay;
 
     private long lastDropped = 0;
 
@@ -56,6 +58,7 @@ public class DroppedMessageMetrics
         unDroppedDelayHistogram = Metrics.newHistogram(factory.createMetricName("UnDroppedDelayHistogram"), true);
         unDroppedAtDeliveryDelayHistogram = Metrics.newHistogram(factory.createMetricName("UnDroppedAtDeliveryDelayHistogram"), true);
         messageDeliveryTime = Metrics.newTimer(factory.createMetricName("DeliveryTime"), TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+        dummyMessageDeliveryDelay = Metrics.newTimer(factory.createMetricName("DummyMessageDeliveryDelay"), TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
     }
 
     @Deprecated

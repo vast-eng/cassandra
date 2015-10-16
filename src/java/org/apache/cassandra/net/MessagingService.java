@@ -762,19 +762,19 @@ public final class MessagingService implements MessagingServiceMBean
             StageManager.getStage(Stage.MUTATION).execute(new Runnable() {
                 @Override
                 public void run() {
-                    MessagingService.instance().updateDroppableDeliveryTaskTime(Verb.DUMMY_MUTATION, System.nanoTime()-time);
+                    MessagingService.instance().updateDummyMessageDeliveryDelay(Verb.DUMMY_MUTATION, System.nanoTime() - time);
                 }
             }, null);
             StageManager.getStage(Stage.COUNTER_MUTATION).execute(new Runnable() {
                 @Override
                 public void run() {
-                    MessagingService.instance().updateDroppableDeliveryTaskTime(Verb.DUMMY_COUNTER_MUTATION, System.nanoTime()-time);
+                    MessagingService.instance().updateDummyMessageDeliveryDelay(Verb.DUMMY_COUNTER_MUTATION, System.nanoTime() - time);
                 }
             }, null);
             StageManager.getStage(Stage.TRACING).execute(new Runnable() {
                 @Override
                 public void run() {
-                    MessagingService.instance().updateDroppableDeliveryTaskTime(Verb.DUMMY_TRACING, System.nanoTime()-time);
+                    MessagingService.instance().updateDummyMessageDeliveryDelay(Verb.DUMMY_TRACING, System.nanoTime() - time);
                 }
             }, null);
         }
@@ -941,6 +941,16 @@ public final class MessagingService implements MessagingServiceMBean
             droppedMessages.put(verb, metrics);
         }
         metrics.messageDeliveryTime.update(nanos, TimeUnit.NANOSECONDS);
+    }
+
+    public void updateDummyMessageDeliveryDelay(Verb verb, long nanos) {
+        DroppedMessageMetrics metrics = droppedMessages.get(verb);
+        if (metrics == null)
+        {
+            metrics = new DroppedMessageMetrics(verb);
+            droppedMessages.put(verb, metrics);
+        }
+        metrics.dummyMessageDeliveryDelay.update(nanos, TimeUnit.NANOSECONDS);
     }
 
     /**
