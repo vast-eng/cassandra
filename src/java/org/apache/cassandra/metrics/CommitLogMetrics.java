@@ -43,6 +43,7 @@ public class CommitLogMetrics
     public final Timer waitingOnSegmentAllocation;
     /** The time spent waiting on CL sync; for Periodic this is only occurs when the sync is lagging its sync interval */
     public final Timer waitingOnCommit;
+    public final Timer flush;
 
     public CommitLogMetrics(final AbstractCommitLogService service, final CommitLogSegmentManager allocator)
     {
@@ -55,19 +56,18 @@ public class CommitLogMetrics
         });
         pendingTasks = Metrics.newGauge(factory.createMetricName("PendingTasks"), new Gauge<Long>()
         {
-            public Long value()
-            {
+            public Long value() {
                 return service.getPendingTasks();
             }
         });
         totalCommitLogSize = Metrics.newGauge(factory.createMetricName("TotalCommitLogSize"), new Gauge<Long>()
         {
-            public Long value()
-            {
+            public Long value() {
                 return allocator.bytesUsed();
             }
         });
         waitingOnSegmentAllocation = Metrics.newTimer(factory.createMetricName("WaitingOnSegmentAllocation"), TimeUnit.MICROSECONDS, TimeUnit.SECONDS);
         waitingOnCommit = Metrics.newTimer(factory.createMetricName("WaitingOnCommit"), TimeUnit.MICROSECONDS, TimeUnit.SECONDS);
+        flush = Metrics.newTimer(factory.createMetricName("Flush"), TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
     }
 }

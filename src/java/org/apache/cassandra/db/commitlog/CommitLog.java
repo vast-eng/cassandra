@@ -21,11 +21,14 @@ import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -187,6 +190,7 @@ public class CommitLog implements CommitLogMBean
      */
     public void sync(boolean syncAllSegments)
     {
+        long base = System.nanoTime();
         CommitLogSegment current = allocator.allocatingFrom();
         for (CommitLogSegment segment : allocator.getActiveSegments())
         {
@@ -194,6 +198,7 @@ public class CommitLog implements CommitLogMBean
                 return;
             segment.sync();
         }
+        metrics.flush.update(System.nanoTime()-base, TimeUnit.NANOSECONDS);
     }
 
     /**
