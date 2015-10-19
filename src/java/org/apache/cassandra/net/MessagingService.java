@@ -297,9 +297,9 @@ public final class MessagingService implements MessagingServiceMBean
                                                                    Verb.MUTATION,
                                                                    Verb.COUNTER_MUTATION,
             Verb.LOCAL_MUTATION,
-            Verb.DUMMY_COUNTER_MUTATION,
-            Verb.DUMMY_MUTATION,
-            Verb.DUMMY_TRACING,
+//            Verb.DUMMY_COUNTER_MUTATION,
+//            Verb.DUMMY_MUTATION,
+//            Verb.DUMMY_TRACING,
                                                                    Verb.READ_REPAIR,
                                                                    Verb.READ,
                                                                    Verb.RANGE_SLICE,
@@ -754,30 +754,30 @@ public final class MessagingService implements MessagingServiceMBean
         Runnable runnable = new MessageDeliveryTask(message, id, timestamp);
         TracingAwareExecutorService stage = StageManager.getStage(message.getMessageType());
         assert stage != null : "No stage for message type " + message.verb;
-        // we are seeing delay on the mutation stage which shouldn't be busy, so let's post a dummy runnable
-        // to that, the counter mutation stage which is backed by the same SEP, and the trace which isn't to see if 
-        // they get delayed too
-        if (message.getMessageType() == Stage.MUTATION) {
-            final long time = System.nanoTime();
-            StageManager.getStage(Stage.MUTATION).execute(new Runnable() {
-                @Override
-                public void run() {
-                    MessagingService.instance().updateDummyDeliveryTime(Verb.DUMMY_MUTATION, System.nanoTime() - time);
-                }
-            }, null);
-            StageManager.getStage(Stage.COUNTER_MUTATION).execute(new Runnable() {
-                @Override
-                public void run() {
-                    MessagingService.instance().updateDummyDeliveryTime(Verb.DUMMY_COUNTER_MUTATION, System.nanoTime() - time);
-                }
-            }, null);
-            StageManager.getStage(Stage.TRACING).execute(new Runnable() {
-                @Override
-                public void run() {
-                    MessagingService.instance().updateDummyDeliveryTime(Verb.DUMMY_TRACING, System.nanoTime() - time);
-                }
-            }, null);
-        }
+//        // we are seeing delay on the mutation stage which shouldn't be busy, so let's post a dummy runnable
+//        // to that, the counter mutation stage which is backed by the same SEP, and the trace which isn't to see if
+//        // they get delayed too
+//        if (message.getMessageType() == Stage.MUTATION) {
+//            final long time = System.nanoTime();
+//            StageManager.getStage(Stage.MUTATION).execute(new Runnable() {
+//                @Override
+//                public void run() {
+//                    MessagingService.instance().updateDummyDeliveryTime(Verb.DUMMY_MUTATION, System.nanoTime() - time);
+//                }
+//            }, null);
+//            StageManager.getStage(Stage.COUNTER_MUTATION).execute(new Runnable() {
+//                @Override
+//                public void run() {
+//                    MessagingService.instance().updateDummyDeliveryTime(Verb.DUMMY_COUNTER_MUTATION, System.nanoTime() - time);
+//                }
+//            }, null);
+//            StageManager.getStage(Stage.TRACING).execute(new Runnable() {
+//                @Override
+//                public void run() {
+//                    MessagingService.instance().updateDummyDeliveryTime(Verb.DUMMY_TRACING, System.nanoTime() - time);
+//                }
+//            }, null);
+//        }
 
         stage.execute(runnable, state);
     }
