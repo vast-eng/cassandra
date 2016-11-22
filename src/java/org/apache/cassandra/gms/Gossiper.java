@@ -84,7 +84,7 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
     public static final long aVeryLongTime = 259200 * 1000; // 3 days
 
     /** Maximimum difference in generation and version values we are willing to accept about a peer */
-    private static final long MAX_GENERATION_DIFFERENCE = 86400 * 365;
+    private static final long MAX_GENERATION_DIFFERENCE = 86400 * 500;
     private long FatClientTimeout;
     private final Random random = new Random();
     private final Comparator<InetAddress> inetcomparator = new Comparator<InetAddress>()
